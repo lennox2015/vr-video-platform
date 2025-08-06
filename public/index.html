@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>VR Video Plattform</title>
+  <style>
+    body { background:#111; color:#fff; font-family: Arial; padding:20px; }
+    input, button { padding:10px; margin:10px 0; width:100%; max-width:400px; }
+    video, img { max-width:100%; border-radius:8px; }
+    .card { 
+      border:1px solid #444; 
+      padding:15px; 
+      margin:15px 0; 
+      border-radius:10px; 
+      background:#222; 
+      max-width:420px;
+    }
+    .del { background:red; color:#fff; border:none; padding:8px 12px; cursor:pointer; border-radius:5px; }
+    .del:hover { background:darkred; }
+  </style>
+</head>
+<body>
+  <h1>🎥 VR Videos hochladen</h1>
+
+  <form id="uploadForm">
+    <input type="file" name="video" accept="video/*" required />
+    <input type="text" name="title" placeholder="Videotitel" required />
+    <button type="submit">Hochladen</button>
+  </form>
+
+  <h2>📺 Hochgeladene Videos</h2>
+  <div id="videos"></div>
+
+  <script>
+    // Upload-Formular
+    const form = document.getElementById('uploadForm');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const response = await fetch('/upload', { method: 'POST', body: formData });
+      if (response.ok) {
+        alert('Video erfolgreich hochgeladen!');
+        form.reset();
+        loadVideos();
+      } else {
+        alert('Fehler beim Upload.');
+      }
+    });
+
+    // Hochgeladene Videos laden
+    async function loadVideos() {
+      const res = await fetch('/videos');
+      const data = await res.json();
+      const container = document.getElementById('videos');
+      container.innerHTML = '';
+      
+      data.forEach((v, index) => {
+        const card = document.createElement('div');
+        card.className = "card";
+
+        const title = document.createElement('h3');
+        title.textContent = v.title;
+
+        const thumb = document.createElement('img');
+        thumb.src = "https://via.placeholder.com/400x200.png?text=Video"; // Platzhalter-Bild
+        thumb.style.cursor = "pointer";
+
+        const video = document.createElement('video');
+        video.src = v.url;
+        video.controls = true;
+        video.style.display = "none";
+        video.style.marginTop = "10px";
+
+        // Klick auf Bild → Video anzeigen
+        thumb.addEventListener('click', () => {
+          thumb.style.display = "none";
+          video.style.display = "block";
+        });
+
+        // Löschen-Button
+        const delBtn = document.createElement('button');
+        delBtn.textContent = "🗑️ Löschen";
+        delBtn.className = "del";
+        delBtn.onclick = async () => {
+          if (confirm("Video wirklich löschen?")) {
+            await fetch('/delete/' + index, { method: 'DELETE' });
+            loadVideos();
+          }
+        };
+
+        card.appendChild(title);
+        card.appendChild(thumb);
+        card.appendChild(video);
+        card.appendChild(delBtn);
+        container.appendChild(card);
+      });
+    }
+
+    loadVideos();
+  </script>
+</body>
+</html>
